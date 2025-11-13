@@ -199,6 +199,46 @@ class ApiClient {
       throw new Error("Failed to share folder");
     }
   }
+
+  async downloadFile(fileId: string, fileName: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/download/${fileId}`, {
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to download file");
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }
+
+  async downloadFolderAsZip(folderId: string, folderName: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/zip/${folderId}`, {
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to download folder");
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${folderName}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }
 }
 
 export const apiClient = new ApiClient();

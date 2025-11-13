@@ -13,7 +13,8 @@ import {
   MoreVertical,
   Share2,
   Trash2,
-  Download
+  Download,
+  Archive
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -121,6 +122,30 @@ const Dashboard = () => {
         variant: "destructive",
         title: "Delete failed",
         description: error instanceof Error ? error.message : "Failed to delete item",
+      });
+    }
+  };
+
+  const handleDownload = async (item: FileItem) => {
+    try {
+      if (item.type === "folder") {
+        await apiClient.downloadFolderAsZip(item.id, item.name);
+        toast({
+          title: "Download started",
+          description: "Folder is being downloaded as ZIP.",
+        });
+      } else {
+        await apiClient.downloadFile(item.id, item.name);
+        toast({
+          title: "Download started",
+          description: "File is being downloaded.",
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Download failed",
+        description: error instanceof Error ? error.message : "Failed to download",
       });
     }
   };
@@ -256,12 +281,24 @@ const Dashboard = () => {
                         <Share2 className="h-4 w-4 mr-2" />
                         Share
                       </DropdownMenuItem>
-                      {item.type === "file" && (
-                        <DropdownMenuItem>
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
-                        </DropdownMenuItem>
-                      )}
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownload(item);
+                        }}
+                      >
+                        {item.type === "folder" ? (
+                          <>
+                            <Archive className="h-4 w-4 mr-2" />
+                            Download as ZIP
+                          </>
+                        ) : (
+                          <>
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </>
+                        )}
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-destructive"
                         onClick={(e) => {
