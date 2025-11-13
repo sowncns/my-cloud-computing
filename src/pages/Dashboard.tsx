@@ -14,7 +14,9 @@ import {
   Share2,
   Trash2,
   Download,
-  Archive
+  Archive,
+  ArrowLeft,
+  Home
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -178,9 +180,26 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Breadcrumb Navigation */}
+        {currentFolderId && (
+          <div className="mb-4 flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setCurrentFolderId(undefined)}
+              className="gap-2"
+            >
+              <Home className="h-4 w-4" />
+              Back to Root
+            </Button>
+          </div>
+        )}
+
         {/* Actions Bar */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">My Files</h2>
+          <h2 className="text-2xl font-bold">
+            {currentFolderId ? "Folder Contents" : "My Files"}
+          </h2>
           <div className="flex gap-2">
             <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
               <DialogTrigger asChild>
