@@ -1,5 +1,5 @@
 const API_BASE_URL = "http://localhost:3000";
-
+import axios from "axios";
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
@@ -14,6 +14,7 @@ export interface FileItem {
   id: string;
   name: string;
   type: "file" | "folder";
+  s3Url?: string;
   size?: number;
   createdAt: string;
   updatedAt: string;
@@ -32,11 +33,11 @@ class ApiClient {
     const headers: HeadersInit = {
       "Content-Type": "application/json",
     };
-    
+
     if (includeAuth && this.accessToken) {
       headers["Authorization"] = `Bearer ${this.accessToken}`;
     }
-    
+
     return headers;
   }
 
@@ -51,11 +52,11 @@ class ApiClient {
     localStorage.removeItem("refreshToken");
   }
 
-  async register(name: string, email: string, password: string): Promise<AuthResponse> {
+  async register(fname: string, email: string, password: string): Promise<AuthResponse> {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: "POST",
       headers: this.getHeaders(false),
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ fname, email, password }),
     });
 
     if (!response.ok) {
@@ -65,6 +66,16 @@ class ApiClient {
 
     return response.json();
   }
+
+  async getUserInfo() {
+    const res = await fetch(`${API_BASE_URL}/auth/user`, {
+      headers: this.getHeaders(),
+      method: "GET"
+    });
+    if (!res.ok) throw new Error("Failed to fetch user info");
+    return res.json();
+  }
+
 
   async login(email: string, password: string): Promise<AuthResponse> {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -100,10 +111,10 @@ class ApiClient {
   }
 
   async getFileTree(folderId?: string): Promise<FileItem[]> {
-    const url = folderId 
+    const url = folderId
       ? `${API_BASE_URL}/api/tree/${folderId}`
       : `${API_BASE_URL}/api/tree`;
-    
+
     const response = await fetch(url, {
       headers: this.getHeaders(),
     });
@@ -140,6 +151,32 @@ class ApiClient {
     return response.json();
   }
 
+  async createPayment(amount: number,upStore :number) {
+    const res = await fetch(`${API_BASE_URL}/payment/purchase`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ amount, upStore  }),
+    });
+    return res.json();
+  }
+async checkPayment(params: any) {
+  const res = await axios.get(`${API_BASE_URL}/payment/check-payment`, { params });
+  return res.data;
+}
+
+async changePassword(oldPassword: string, newPassword: string) {
+  const res = await fetch(`${API_BASE_URL}/auth/change-password`, {
+    method: "POST",
+    headers: this.getHeaders(),
+    body: JSON.stringify({ oldPassword, newPassword }),
+  });
+
+  if (!res.ok) throw new Error("Password update failed");
+
+  return res.json();
+}
+
+
   async createFolder(name: string, parentId?: string): Promise<FileItem> {
     const response = await fetch(`${API_BASE_URL}/api/create`, {
       method: "POST",
@@ -154,11 +191,11 @@ class ApiClient {
     return response.json();
   }
 
-  async deleteItem(fileId?: string, folderId?: string): Promise<void> {
+  async deleteItem(id: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/api/delete`, {
       method: "POST",
       headers: this.getHeaders(),
-      body: JSON.stringify({ fileId, folderId }),
+      body: JSON.stringify({ id }),
     });
 
     if (!response.ok) {
@@ -220,25 +257,17 @@ class ApiClient {
     document.body.removeChild(a);
   }
 
-  async downloadFolderAsZip(folderId: string, folderName: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/zip/${folderId}`, {
+async renameItem(id :string, newName: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/rename`, {
+      method: "POST",
       headers: this.getHeaders(),
+      body: JSON.stringify({ id , newName }),
     });
-
     if (!response.ok) {
-      throw new Error("Failed to download folder");
+      throw new Error("Failed to rename item");
     }
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${folderName}.zip`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-  }
+    return response.json();
+}
 }
 
 export const apiClient = new ApiClient();
