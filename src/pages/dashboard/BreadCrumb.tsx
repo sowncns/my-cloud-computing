@@ -6,6 +6,7 @@ export const Breadcrumb = ({ path, onNavigate }: any) => {
   {path.map((p, index) => (
     <div key={p.id} className="flex items-center">
       <button
+    
         onClick={() => {
           onNavigate(p.id, index);
         }}

@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = "http://52.76.57.239/api";
 import axios from "axios";
 export interface AuthResponse {
   accessToken: string;
@@ -24,9 +24,11 @@ export interface FileItem {
 
 class ApiClient {
   private accessToken: string | null = null;
+  private isRefreshing = false;
+  private refreshSubscribers: Array<(token: string) => void> = [];
 
   constructor() {
-    this.accessToken = localStorage.getItem("accessToken");
+    this.accessToken = sessionStorage.getItem("accessToken");
   }
 
   private getHeaders(includeAuth = true): HeadersInit {
@@ -43,13 +45,71 @@ class ApiClient {
 
   setAccessToken(token: string) {
     this.accessToken = token;
-    localStorage.setItem("accessToken", token);
+    sessionStorage.setItem("accessToken", token);
   }
 
   clearAccessToken() {
     this.accessToken = null;
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+    sessionStorage.removeItem("accessToken");
+    sessionStorage.removeItem("refreshToken");
+  }
+
+  // Subscribe to token refresh
+  private onRefreshed(token: string) {
+    this.refreshSubscribers.forEach((callback) => callback(token));
+    this.refreshSubscribers = [];
+  }
+
+  // Add subscriber
+  private addRefreshSubscriber(callback: (token: string) => void) {
+    this.refreshSubscribers.push(callback);
+  }
+
+  // Refresh access token using refresh token
+  private async refreshAccessToken(): Promise<string | null> {
+    if (this.isRefreshing) {
+      // Return a promise that resolves when token is refreshed
+      return new Promise((resolve) => {
+        this.addRefreshSubscriber((token) => {
+          resolve(token);
+        });
+      });
+    }
+
+    this.isRefreshing = true;
+    const refreshToken = sessionStorage.getItem("refreshToken");
+
+    if (!refreshToken) {
+      this.isRefreshing = false;
+      return null;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: "POST",
+        headers: this.getHeaders(false),
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        this.setAccessToken(data.accessToken);
+        this.isRefreshing = false;
+        this.onRefreshed(data.accessToken);
+        return data.accessToken;
+      } else {
+        // Refresh failed - clear tokens and redirect to login
+        this.clearAccessToken();
+        this.isRefreshing = false;
+        window.location.href = "/login";
+        return null;
+      }
+    } catch (error) {
+      this.clearAccessToken();
+      this.isRefreshing = false;
+      window.location.href = "/login";
+      return null;
+    }
   }
 
   async register(fname: string, email: string, password: string): Promise<AuthResponse> {
@@ -68,10 +128,22 @@ class ApiClient {
   }
 
   async getUserInfo() {
-    const res = await fetch(`${API_BASE_URL}/auth/user`, {
+    let res = await fetch(`${API_BASE_URL}/auth/user`, {
       headers: this.getHeaders(),
       method: "GET"
     });
+    
+    // If 401, try to refresh token and retry
+    if (res.status === 401) {
+      const newToken = await this.refreshAccessToken();
+      if (newToken) {
+        res = await fetch(`${API_BASE_URL}/auth/user`, {
+          headers: this.getHeaders(),
+          method: "GET"
+        });
+      }
+    }
+    
     if (!res.ok) throw new Error("Failed to fetch user info");
     return res.json();
   }
@@ -91,7 +163,7 @@ class ApiClient {
 
     const data = await response.json();
     this.setAccessToken(data.accessToken);
-    localStorage.setItem("refreshToken", data.refreshToken);
+    sessionStorage.setItem("refreshToken", data.refreshToken);
     return data;
   }
 
@@ -110,14 +182,38 @@ class ApiClient {
     }
   }
 
+  // Wrapper to handle 401 and retry with refreshed token
+  private async handleResponse(response: Response): Promise<Response> {
+    if (response.status === 401) {
+      // Token expired - try to refresh
+      const newToken = await this.refreshAccessToken();
+      if (newToken) {
+        // Token was refreshed, but we can't retry the same request here
+        // Caller must retry the request
+        return response;
+      }
+    }
+    return response;
+  }
+
   async getFileTree(folderId?: string): Promise<FileItem[]> {
     const url = folderId
       ? `${API_BASE_URL}/api/tree/${folderId}`
       : `${API_BASE_URL}/api/tree`;
 
-    const response = await fetch(url, {
+    let response = await fetch(url, {
       headers: this.getHeaders(),
     });
+
+    // If 401, try to refresh token and retry
+    if (response.status === 401) {
+      const newToken = await this.refreshAccessToken();
+      if (newToken) {
+        response = await fetch(url, {
+          headers: this.getHeaders(),
+        });
+      }
+    }
 
     if (!response.ok) {
       throw new Error("Failed to fetch file tree");
@@ -145,6 +241,7 @@ class ApiClient {
     });
 
     if (!response.ok) {
+      console.log("Upload response status:", response);
       throw new Error("Failed to upload file");
     }
 
@@ -178,11 +275,23 @@ async changePassword(oldPassword: string, newPassword: string) {
 
 
   async createFolder(name: string, parentId?: string): Promise<FileItem> {
-    const response = await fetch(`${API_BASE_URL}/api/create`, {
+    let response = await fetch(`${API_BASE_URL}/api/create`, {
       method: "POST",
       headers: this.getHeaders(),
       body: JSON.stringify({ name, parentId }),
     });
+
+    // If 401, try to refresh token and retry
+    if (response.status === 401) {
+      const newToken = await this.refreshAccessToken();
+      if (newToken) {
+        response = await fetch(`${API_BASE_URL}/api/create`, {
+          method: "POST",
+          headers: this.getHeaders(),
+          body: JSON.stringify({ name, parentId }),
+        });
+      }
+    }
 
     if (!response.ok) {
       throw new Error("Failed to create folder");
@@ -192,11 +301,23 @@ async changePassword(oldPassword: string, newPassword: string) {
   }
 
   async deleteItem(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/delete`, {
+    let response = await fetch(`${API_BASE_URL}/api/delete`, {
       method: "POST",
       headers: this.getHeaders(),
       body: JSON.stringify({ id }),
     });
+
+    // If 401, try to refresh token and retry
+    if (response.status === 401) {
+      const newToken = await this.refreshAccessToken();
+      if (newToken) {
+        response = await fetch(`${API_BASE_URL}/api/delete`, {
+          method: "POST",
+          headers: this.getHeaders(),
+          body: JSON.stringify({ id }),
+        });
+      }
+    }
 
     if (!response.ok) {
       throw new Error("Failed to delete item");

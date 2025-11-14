@@ -11,7 +11,7 @@ export const QuotaCard = ({ used  , total }: any) => {
   };
 
   return (
-    <div className="rounded-lg border bg-card m-2 p-6 mt-2 ">
+    <div className="rounded-lg border bg-card m-4 p-6 mt-6 ">
       <div className="flex justify-between mb-2 text-sm">
         <span>Storage Used</span>
         <span>{format(used)} / {format(total)}</span>

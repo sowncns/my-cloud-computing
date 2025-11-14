@@ -13,28 +13,31 @@ import CreateFolderDialog from "../dashboard/CreateFolderDialog";
 import PreviewDialog from "../dashboard/PreviewDialog";
 import UpgradeDialog from "../dashboard/UpgradeDialog";
 import { Button } from "@/components/ui/button";
+import { set } from "date-fns";
+import { get } from "http";
+import ChangePasswordDialog from "./changePasswordDialog";
 const Dashboard = () => {
     const navigate = useNavigate();
-
     const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
     const [upgradeOpen, setUpgradeOpen] = useState(false);
-
+    const [user, setUser] = useState<any>(null);
     const [path, setPath] = useState([{ id: undefined, name: "Root" }]);
     const [currentFolderId, setCurrentFolderId] = useState<string | undefined>();
     const [files, setFiles] = useState<any[]>([]);
     const [usedStorage, setUsedStorage] = useState(0);
     const [totalStorage, setTotalStorage] = useState(0);
-
+    const [passwordOpen, setPasswordOpen] = useState(false);
     const [shareOpen, setShareOpen] = useState(false);
     const [shareItem, setShareItem] = useState<any>(null);
     const [shareLink, setShareLink] = useState("");
 
     useEffect(() => {
-        const token = localStorage.getItem("accessToken");
+        const token = sessionStorage.getItem("accessToken");
         if (!token) navigate("/login");
 
         loadFiles();
         loadQuota();
+
     }, [currentFolderId]);
 
     const loadFiles = async () => {
@@ -82,9 +85,9 @@ const Dashboard = () => {
     return (
 
         <div className="min-h-screen bg-background flex flex-col">
-            <HeaderBar onLogout={handleLogout} />
-
+            <HeaderBar onLogout={handleLogout} user={user} onChangePassword={() => setPasswordOpen(true)} />
             {/* Fixed Header with Controls */}
+          
             <div className="bg-background  z-40 fixed top-16 left-0 right-0">
                 <div className="container mx-auto ">
                     <QuotaCard used={usedStorage} total={totalStorage} />
@@ -136,7 +139,7 @@ const Dashboard = () => {
             </div>
 
             {/* Scrollable Main Content */}
-            <main className="flex-1 overflow-y-auto mt-[200px]">
+            <main className="flex-1 overflow-y-auto mt-[250px]">
                 <div className="container mx-auto px-4 py-6">
                     <Breadcrumb path={path} onNavigate={goBreadcrumb} />
 
@@ -187,7 +190,7 @@ const Dashboard = () => {
                             }
                         }}
                         onDetail={(item: any) => {
-                           console.log("Detail item:", item);
+                            console.log("Detail item:", item);
 
                         }}
                     />
@@ -223,6 +226,10 @@ const Dashboard = () => {
                     }
                 }}
 
+            />
+              <ChangePasswordDialog
+                open={passwordOpen}
+                onOpenChange={setPasswordOpen}
             />
 
 
