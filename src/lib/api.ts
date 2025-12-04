@@ -1,4 +1,5 @@
-const API_BASE_URL = "http://52.76.57.239/api";
+//const API_BASE_URL = "http://52.76.57.239";
+const API_BASE_URL = "http://localhost:3000";
 import axios from "axios";
 export interface AuthResponse {
   accessToken: string;
@@ -112,11 +113,11 @@ class ApiClient {
     }
   }
 
-  async register(fname: string, email: string, password: string): Promise<AuthResponse> {
+  async register(name: string, email: string, password: string): Promise<AuthResponse> {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: "POST",
       headers: this.getHeaders(false),
-      body: JSON.stringify({ fname, email, password }),
+      body: JSON.stringify({ name, email, password }),
     });
 
     if (!response.ok) {
@@ -128,22 +129,22 @@ class ApiClient {
   }
 
   async getUserInfo() {
-    let res = await fetch(`${API_BASE_URL}/auth/user`, {
+    let res = await fetch(`${API_BASE_URL}/api/user`, {
       headers: this.getHeaders(),
       method: "GET"
     });
-    
+
     // If 401, try to refresh token and retry
     if (res.status === 401) {
       const newToken = await this.refreshAccessToken();
       if (newToken) {
-        res = await fetch(`${API_BASE_URL}/auth/user`, {
+        res = await fetch(`${API_BASE_URL}/api/user`, {
           headers: this.getHeaders(),
           method: "GET"
         });
       }
     }
-    
+
     if (!res.ok) throw new Error("Failed to fetch user info");
     return res.json();
   }
@@ -182,6 +183,62 @@ class ApiClient {
     }
   }
 
+async searchUserPublic(username: string) {
+  const res = await fetch(`${API_BASE_URL}/watch/${username}/tree`, {
+    headers: this.getHeaders()
+  });
+  return res.json();
+}
+
+async searchFiles(keyword: string,username :string) {
+  
+  const res = await fetch(`${API_BASE_URL}/watch/${username}/tree?kw=${keyword}`, {
+    headers: this.getHeaders()
+  });
+  return res.json();
+}
+
+async searchFilesByKeyword(keyword: string): Promise<FileItem[]> {
+  let response = await fetch(`${API_BASE_URL}/search?kw=${encodeURIComponent(keyword)}`, {
+    headers: this.getHeaders(),
+  });
+
+  // If 401, try to refresh token and retry
+  if (response.status === 401) {
+    const newToken = await this.refreshAccessToken();
+    if (newToken) {
+      response = await fetch(`${API_BASE_URL}/search?kw=${encodeURIComponent(keyword)}`, {
+        headers: this.getHeaders(),
+      });
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error("Failed to search files");
+  }
+
+  return response.json();
+}
+async searchFilesByUser(username: string): Promise<FileItem[]> {
+  let response = await fetch(`${API_BASE_URL}/search/user/${encodeURIComponent(username)}`, {
+    headers: this.getHeaders(),
+  }); 
+  // If 401, try to refresh token and retry
+  if (response.status === 401) {
+    const newToken = await this.refreshAccessToken();
+    if (newToken) {
+
+      response = await fetch(`${API_BASE_URL}/search/user/${encodeURIComponent(username)}`, {
+        headers: this.getHeaders(),
+      });
+    }
+  }
+  if (!response.ok) {
+    throw new Error("Failed to search files by user");
+  }
+  return response.json();
+}
+
   // Wrapper to handle 401 and retry with refreshed token
   private async handleResponse(response: Response): Promise<Response> {
     if (response.status === 401) {
@@ -196,10 +253,8 @@ class ApiClient {
     return response;
   }
 
-  async getFileTree(folderId?: string): Promise<FileItem[]> {
-    const url = folderId
-      ? `${API_BASE_URL}/api/tree/${folderId}`
-      : `${API_BASE_URL}/api/tree`;
+  async getFileTree(): Promise<FileItem[]> {
+    const url = `${API_BASE_URL}/api/tree`;
 
     let response = await fetch(url, {
       headers: this.getHeaders(),
@@ -222,7 +277,7 @@ class ApiClient {
     return response.json();
   }
 
-  async uploadFile(file: File, folderId?: string): Promise<FileItem> {
+  async uploadFiles(file: File, folderId?: string): Promise<FileItem> {
     const formData = new FormData();
     formData.append("file", file);
     if (folderId) {
@@ -234,7 +289,7 @@ class ApiClient {
       headers["Authorization"] = `Bearer ${this.accessToken}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/upload-to-folder`, {
+    const response = await fetch(`${API_BASE_URL}/api/upload`, {
       method: "POST",
       headers,
       body: formData,
@@ -248,30 +303,30 @@ class ApiClient {
     return response.json();
   }
 
-  async createPayment(amount: number,upStore :number) {
+  async createPayment(amount: number, upStore: number, planName: string) {
     const res = await fetch(`${API_BASE_URL}/payment/purchase`, {
       method: "POST",
       headers: this.getHeaders(),
-      body: JSON.stringify({ amount, upStore  }),
+      body: JSON.stringify({ amount, upStore, planName }),
     });
     return res.json();
   }
-async checkPayment(params: any) {
-  const res = await axios.get(`${API_BASE_URL}/payment/check-payment`, { params });
-  return res.data;
-}
+  async checkPayment(params: any) {
+    const res = await axios.get(`${API_BASE_URL}/payment/check-payment`, { params });
+    return res.data;
+  }
 
-async changePassword(oldPassword: string, newPassword: string) {
-  const res = await fetch(`${API_BASE_URL}/auth/change-password`, {
-    method: "POST",
-    headers: this.getHeaders(),
-    body: JSON.stringify({ oldPassword, newPassword }),
-  });
+  async changePassword(oldPassword: string, newPassword: string) {
+    const res = await fetch(`${API_BASE_URL}/auth/change-password`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ oldPassword, newPassword }),
+    });
 
-  if (!res.ok) throw new Error("Password update failed");
+    if (!res.ok) throw new Error("Password update failed");
 
-  return res.json();
-}
+    return res.json();
+  }
 
 
   async createFolder(name: string, parentId?: string): Promise<FileItem> {
@@ -378,17 +433,92 @@ async changePassword(oldPassword: string, newPassword: string) {
     document.body.removeChild(a);
   }
 
-async renameItem(id :string, newName: string): Promise<void> {
+  async renameItem(id: string, newName: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/api/rename`, {
       method: "POST",
       headers: this.getHeaders(),
-      body: JSON.stringify({ id , newName }),
+      body: JSON.stringify({ id, newName }),
     });
     if (!response.ok) {
       throw new Error("Failed to rename item");
     }
     return response.json();
-}
+  }
+
+  async getTrashItems(folderId?: string | null): Promise<FileItem[]> {
+    const url = folderId 
+      ? `${API_BASE_URL}/api/trash?folderId=${folderId}`
+      : `${API_BASE_URL}/api/trash`;
+    
+    let response = await fetch(url, {
+      headers: this.getHeaders(),
+    });
+
+    // If 401, try to refresh token and retry
+    if (response.status === 401) {
+      const newToken = await this.refreshAccessToken();
+      if (newToken) {
+        response = await fetch(url, {
+          headers: this.getHeaders(),
+        });
+      }
+    }
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch trash items");
+    }
+
+    return response.json();
+  }
+
+  async restoreItem(id: string): Promise<void> {
+    let response = await fetch(`${API_BASE_URL}/api/trash/restore`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ id }),
+    });
+
+    // If 401, try to refresh token and retry
+    if (response.status === 401) {
+      const newToken = await this.refreshAccessToken();
+      if (newToken) {
+        response = await fetch(`${API_BASE_URL}/api/trash/restore`, {
+          method: "POST",
+          headers: this.getHeaders(),
+          body: JSON.stringify({ id }),
+        });
+      }
+    }
+
+    if (!response.ok) {
+      throw new Error("Failed to restore item");
+    }
+  }
+
+  async permanentlyDeleteItem(id: string): Promise<void> {
+    console.log("Permanently deleting item with id:", typeof id);
+    let response = await fetch(`${API_BASE_URL}/api/trash/delete`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify( {id} ),
+    })
+
+    // If 401, try to refresh token and retry
+    if (response.status === 401) {
+      const newToken = await this.refreshAccessToken();
+      if (newToken) {
+        response = await fetch(`${API_BASE_URL}/api/trash/delete`, {
+          method: "POST",
+          headers: this.getHeaders(),
+          body: JSON.stringify({ id }),
+        });
+      }
+    }
+
+    if (!response.ok) {
+      throw new Error("Failed to permanently delete item");
+    }
+  }
 }
 
 export const apiClient = new ApiClient();
