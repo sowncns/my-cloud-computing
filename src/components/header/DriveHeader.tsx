@@ -21,6 +21,7 @@ export default function DriveHeader({ view, onChangeView, onCreateFolder, onFile
   };
 
   const handleCreateFolder = (folderName: string) => {
+    console.log("[DriveHeader] create folder requested:", { folderName, currentFolderId });
     if (onCreateFolder) {
       onCreateFolder(folderName, currentFolderId);
     }

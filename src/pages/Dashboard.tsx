@@ -6,7 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { FileGrid } from "../components/drive/FileGrid";
 import { set } from "date-fns";
 import { on } from "events";
-
+import  {DetailDialog}  from "../components/dialog/DetailDialog";
 export interface BreadcrumbItem {
   id: string | null;
   name: string;
@@ -19,6 +19,8 @@ export default function Dashboard({ paths }: { paths: string }) {
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([{ id: null, name: "My Drive" }]);
   const [quota, setQuota] = useState<{ used: number; total: number } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+    const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+    const [detailItem, setDetailItem] = useState<FileItem | null>(null);
   const [trashItems, setTrashItems] = useState<FileItem[]>([]);
   const [temporary, setTemporary] = useState<FileItem[]>([]);
   const [searchResults, setSearchResults] = useState<FileItem[]>([]);
@@ -79,6 +81,7 @@ export default function Dashboard({ paths }: { paths: string }) {
 
   const handleCreateFolder = async (folderName: string, parentFolderId?: string) => {
     try {
+      console.log("[Dashboard] handleCreateFolder called:", { folderName, parentFolderId });
       await apiClient.createFolder(folderName, parentFolderId || undefined);
 
       toast({
@@ -252,6 +255,8 @@ export default function Dashboard({ paths }: { paths: string }) {
     }
   };
 
+  
+
   const onOpenFolder = (folder: FileItem) => {
     const folderId = (folder as any).id || (folder as any)._id || null;
     setCurrentFolderId(folderId);
@@ -272,7 +277,15 @@ export default function Dashboard({ paths }: { paths: string }) {
     // Trim breadcrumbs to the clicked level
     setBreadcrumbs(breadcrumbs.slice(0, index + 1));
   };
-  
+  const onDetail = async(item:any)=>{
+    setDetailItem(item);
+    setDetailDialogOpen(true);
+    console.log("Detail item:", item);
+  }
+  const onShare = async(item:any)=>{
+    setDetailItem(item);
+    console.log("Detail item:", item);
+  }
   return (
     <DriveLayout
       onCreateFolder={handleCreateFolder}
@@ -296,8 +309,11 @@ export default function Dashboard({ paths }: { paths: string }) {
           isSearching={isSearching}
           searchResultCount={searchResults.length}
           onOpenFolder={onOpenFolder}
+          onDetail={onDetail}
+        
         />
       )}
+      
     </DriveLayout>
   );
-}
+    }

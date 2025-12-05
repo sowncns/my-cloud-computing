@@ -471,11 +471,37 @@ async searchFilesByUser(username: string): Promise<FileItem[]> {
     return response.json();
   }
 
+  async getSharedItems(folderId?: string | null): Promise<FileItem[]> {
+    const url = folderId ? `${API_BASE_URL}/api/shared/${folderId}` : `${API_BASE_URL}/api/shared`;
+
+    let response = await fetch(url, {
+      headers: this.getHeaders(),
+    });
+
+    // If 401, try to refresh token and retry
+    if (response.status === 401) {
+      const newToken = await this.refreshAccessToken();
+      if (newToken) {
+        response = await fetch(url, {
+          headers: this.getHeaders(),
+        });
+      }
+    }
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch shared items");
+    }
+
+    return response.json();
+  }
+
   async restoreItem(id: string): Promise<void> {
+    const payload = { id, _id: id };
+    console.log("[api] restoreItem payload:", payload);
     let response = await fetch(`${API_BASE_URL}/api/trash/restore`, {
       method: "POST",
       headers: this.getHeaders(),
-      body: JSON.stringify({ id }),
+      body: JSON.stringify(payload),
     });
 
     // If 401, try to refresh token and retry
@@ -496,11 +522,13 @@ async searchFilesByUser(username: string): Promise<FileItem[]> {
   }
 
   async permanentlyDeleteItem(id: string): Promise<void> {
-    console.log("Permanently deleting item with id:", typeof id);
+    console.log("Permanently deleting item with id:", id);
+    const payload = { id, _id: id };
+    console.log("[api] permanentlyDeleteItem payload:", payload);
     let response = await fetch(`${API_BASE_URL}/api/trash/delete`, {
       method: "POST",
       headers: this.getHeaders(),
-      body: JSON.stringify( {id} ),
+      body: JSON.stringify(payload),
     })
 
     // If 401, try to refresh token and retry

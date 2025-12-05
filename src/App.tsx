@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
+import Shared from "./pages/Shared";
 
 const queryClient = new QueryClient();
 const App = () => (
@@ -17,6 +18,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/trash" element={<Dashboard paths="trash" />} />
+          <Route path="/shared" element={<Shared />} />
           <Route path="/dashboard/*" element={<Dashboard paths="dashboard" />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

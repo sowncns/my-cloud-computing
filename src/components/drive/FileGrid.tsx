@@ -2,6 +2,7 @@ import FileItem from "./FileItem";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { File, Folder } from "lucide-react";
+import { DetailDialog } from "../dialog/DetailDialog";
 
 export function FileGrid({ files, path, view, onRestore, onOpenFolder, onDelete, onShare, onDownload, onPreview, onRename, onDetail, isSearchActive, isSearching, searchResultCount, selectedItems, onToggleSelect, onToggleSelectAll, onDeleteSelected, onRestoreSelected }: any) {
   // If search is active
@@ -35,49 +36,8 @@ export function FileGrid({ files, path, view, onRestore, onOpenFolder, onDelete,
           </div>
         )}
         
-        {/* Bulk Actions Toolbar */}
-        {selectedItems && selectedItems.size > 0 && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-blue-900">{selectedItems.size} item(s) selected</span>
-              {files && selectedItems.size < files.length && (
-                <button 
-                  onClick={onToggleSelectAll}
-                  className="px-3 py-1 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
-                >
-                  Select all {files.length}
-                </button>
-              )}
-              {files && selectedItems.size === files.length && (
-                <button 
-                  onClick={onToggleSelectAll}
-                  className="px-3 py-1 text-xs font-semibold text-white bg-gray-500 hover:bg-gray-600 rounded transition-colors"
-                >
-                  Deselect all
-                </button>
-              )}
-            </div>
-            <div className="flex gap-2">
-              {path === "trash" && (
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={onRestoreSelected}
-                  className="text-green-600 hover:text-green-700"
-                >
-                  Restore
-                </Button>
-              )}
-              <Button 
-                size="sm" 
-                variant="destructive"
-                onClick={onDeleteSelected}
-              >
-                Delete
-              </Button>
-            </div>
-          </div>
-        )}
+       
+       
         
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {files.map((item: any) => {
@@ -112,6 +72,7 @@ export function FileGrid({ files, path, view, onRestore, onOpenFolder, onDelete,
                 onDetail={onDetail}
                 path={path}
                 onRestore={onRestore}
+                
               />
             </div>
             );
@@ -130,48 +91,7 @@ export function FileGrid({ files, path, view, onRestore, onOpenFolder, onDelete,
       )}
       
       {/* Bulk Actions Toolbar */}
-      {selectedItems && selectedItems.size > 0 && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-blue-900">{selectedItems.size} item(s) selected</span>
-            {files && selectedItems.size < files.length && (
-              <button 
-                onClick={onToggleSelectAll}
-                className="px-3 py-1 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
-              >
-                Select all {files.length}
-              </button>
-            )}
-            {files && selectedItems.size === files.length && (
-              <button 
-                onClick={onToggleSelectAll}
-                className="px-3 py-1 text-xs font-semibold text-white bg-gray-500 hover:bg-gray-600 rounded transition-colors"
-              >
-                Deselect all
-              </button>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {path === "trash" && (
-              <Button 
-                size="sm" 
-                variant="outline"
-                onClick={onRestoreSelected}
-                className="text-green-600 hover:text-green-700"
-              >
-                Restore
-              </Button>
-            )}
-            <Button 
-              size="sm" 
-              variant="destructive"
-              onClick={onDeleteSelected}
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
-      )}
+   
       
       <div className="divide-y border rounded-lg bg-white">
         {files.map((item: any) => {
@@ -202,7 +122,7 @@ export function FileGrid({ files, path, view, onRestore, onOpenFolder, onDelete,
 
             {/* RIGHT ACTIONS */}
             <div className="flex items-center gap-3 ml-3 flex-shrink-0">
-              {path !== "trash" && <button onClick={() => onPreview && onPreview(item)} className="text-xs text-blue-600 hover:underline">Xem</button>}
+            
               {path !== "trash" && <button onClick={() => onRename && onRename(item)} className="text-xs text-gray-700 hover:underline">Đổi tên</button>}
               {path == "trash" && <button onClick={() => onRestore && onRestore(item)} className="text-xs text-gray-700 hover:underline">Phục hồi</button>}
                {path == "trash" && <button onClick={() => onDelete && onDelete(item)} className="text-xs text-gray-700 hover:underline">Xóa</button>}
