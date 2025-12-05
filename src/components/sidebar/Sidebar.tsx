@@ -14,9 +14,8 @@ export default function Sidebar() {
         
         </div>
           </Link>
-        <SidebarItem href="/recent" label="Gần đây"  />
+        <SidebarItem href="/dashboard" label="Trang chủ"  />
         <SidebarItem href="/shared" label="Được chia sẻ" />
-        <SidebarItem href="/starred" label="Có gắn sao" />
         <SidebarItem href="/trash" label="Thùng rác" />
       </div>
     </div>

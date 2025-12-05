@@ -49,7 +49,7 @@ export default function Dashboard({ paths }: { paths: string }) {
 
   const loadFiles = async () => {
     try {
-      const data = await apiClient.getFileTree();
+      const data = await apiClient.getFileTree(currentFolderId || undefined);
       setFiles(data);
     } catch (error: any) {
       toast({
@@ -183,20 +183,21 @@ export default function Dashboard({ paths }: { paths: string }) {
 
   const onRename = async (item: any) => {
     const newName = prompt("Enter new name", item.name);
-     console.log(item)
+    console.log(item)
 
     if (!newName) return;
     try {
-      await apiClient.renameItem(item.id, newName);
+      const itemId = item.id || item._id;
+      await apiClient.renameItem(itemId, newName);
       toast({
         title: "Success",
         description: "Item renamed successfully",
       });
-       loadFiles();
+      loadFiles();
     } catch (error: any) {
       toast({
         title: "Rename Failed",
-        description: error.message || "Failed to rename itemmmmm",
+        description: error.message || "Failed to rename item",
         variant: "destructive",
       });
     }
@@ -252,7 +253,7 @@ export default function Dashboard({ paths }: { paths: string }) {
   };
 
   const onOpenFolder = (folder: FileItem) => {
-    const folderId = folder.id;
+    const folderId = (folder as any).id || (folder as any)._id || null;
     setCurrentFolderId(folderId);
     // Add to breadcrumb trail
     setBreadcrumbs([...breadcrumbs, { id: folderId, name: folder.name }]);

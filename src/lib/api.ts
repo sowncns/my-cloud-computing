@@ -253,8 +253,8 @@ async searchFilesByUser(username: string): Promise<FileItem[]> {
     return response;
   }
 
-  async getFileTree(): Promise<FileItem[]> {
-    const url = `${API_BASE_URL}/api/tree`;
+  async getFileTree(folderId?: string): Promise<FileItem[]> {
+    const url = folderId ? `${API_BASE_URL}/api/tree/${folderId}` : `${API_BASE_URL}/api/tree`;
 
     let response = await fetch(url, {
       headers: this.getHeaders(),
