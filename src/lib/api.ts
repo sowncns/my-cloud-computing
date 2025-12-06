@@ -183,61 +183,61 @@ class ApiClient {
     }
   }
 
-async searchUserPublic(username: string) {
-  const res = await fetch(`${API_BASE_URL}/watch/${username}/tree`, {
-    headers: this.getHeaders()
-  });
-  return res.json();
-}
+  async searchUserPublic(username: string) {
+    const res = await fetch(`${API_BASE_URL}/watch/${username}/tree`, {
+      headers: this.getHeaders()
+    });
+    return res.json();
+  }
 
-async searchFiles(keyword: string,username :string) {
-  
-  const res = await fetch(`${API_BASE_URL}/watch/${username}/tree?kw=${keyword}`, {
-    headers: this.getHeaders()
-  });
-  return res.json();
-}
+  async searchFiles(keyword: string, username: string) {
 
-async searchFilesByKeyword(keyword: string): Promise<FileItem[]> {
-  let response = await fetch(`${API_BASE_URL}/search?kw=${encodeURIComponent(keyword)}`, {
-    headers: this.getHeaders(),
-  });
+    const res = await fetch(`${API_BASE_URL}/watch/${username}/tree?kw=${keyword}`, {
+      headers: this.getHeaders()
+    });
+    return res.json();
+  }
 
-  // If 401, try to refresh token and retry
-  if (response.status === 401) {
-    const newToken = await this.refreshAccessToken();
-    if (newToken) {
-      response = await fetch(`${API_BASE_URL}/search?kw=${encodeURIComponent(keyword)}`, {
-        headers: this.getHeaders(),
-      });
+  async searchFilesByKeyword(keyword: string): Promise<FileItem[]> {
+    let response = await fetch(`${API_BASE_URL}/search?kw=${encodeURIComponent(keyword)}`, {
+      headers: this.getHeaders(),
+    });
+
+    // If 401, try to refresh token and retry
+    if (response.status === 401) {
+      const newToken = await this.refreshAccessToken();
+      if (newToken) {
+        response = await fetch(`${API_BASE_URL}/search?kw=${encodeURIComponent(keyword)}`, {
+          headers: this.getHeaders(),
+        });
+      }
     }
-  }
 
-  if (!response.ok) {
-    throw new Error("Failed to search files");
-  }
-
-  return response.json();
-}
-async searchFilesByUser(username: string): Promise<FileItem[]> {
-  let response = await fetch(`${API_BASE_URL}/search/user/${encodeURIComponent(username)}`, {
-    headers: this.getHeaders(),
-  }); 
-  // If 401, try to refresh token and retry
-  if (response.status === 401) {
-    const newToken = await this.refreshAccessToken();
-    if (newToken) {
-
-      response = await fetch(`${API_BASE_URL}/search/user/${encodeURIComponent(username)}`, {
-        headers: this.getHeaders(),
-      });
+    if (!response.ok) {
+      throw new Error("Failed to search files");
     }
+
+    return response.json();
   }
-  if (!response.ok) {
-    throw new Error("Failed to search files by user");
+  async searchFilesByUser(username: string): Promise<FileItem[]> {
+    let response = await fetch(`${API_BASE_URL}/search/user/${encodeURIComponent(username)}`, {
+      headers: this.getHeaders(),
+    });
+    // If 401, try to refresh token and retry
+    if (response.status === 401) {
+      const newToken = await this.refreshAccessToken();
+      if (newToken) {
+
+        response = await fetch(`${API_BASE_URL}/search/user/${encodeURIComponent(username)}`, {
+          headers: this.getHeaders(),
+        });
+      }
+    }
+    if (!response.ok) {
+      throw new Error("Failed to search files by user");
+    }
+    return response.json();
   }
-  return response.json();
-}
 
   // Wrapper to handle 401 and retry with refreshed token
   private async handleResponse(response: Response): Promise<Response> {
@@ -446,10 +446,10 @@ async searchFilesByUser(username: string): Promise<FileItem[]> {
   }
 
   async getTrashItems(folderId?: string | null): Promise<FileItem[]> {
-    const url = folderId 
+    const url = folderId
       ? `${API_BASE_URL}/api/trash?folderId=${folderId}`
       : `${API_BASE_URL}/api/trash`;
-    
+
     let response = await fetch(url, {
       headers: this.getHeaders(),
     });
@@ -521,6 +521,15 @@ async searchFilesByUser(username: string): Promise<FileItem[]> {
     }
   }
 
+  async setAccess(id: string, mode: string, emails: any): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/set-visibility`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ id, mode, emails }),
+    });
+
+  }
+
   async permanentlyDeleteItem(id: string): Promise<void> {
     console.log("Permanently deleting item with id:", id);
     const payload = { id, _id: id };
@@ -547,6 +556,6 @@ async searchFilesByUser(username: string): Promise<FileItem[]> {
       throw new Error("Failed to permanently delete item");
     }
   }
-}
 
+}
 export const apiClient = new ApiClient();

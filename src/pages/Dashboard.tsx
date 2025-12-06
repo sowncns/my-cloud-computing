@@ -6,7 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { FileGrid } from "../components/drive/FileGrid";
 import { set } from "date-fns";
 import { on } from "events";
-import  {DetailDialog}  from "../components/dialog/DetailDialog";
+import { DetailDialog } from "../components/dialog/DetailDialog";
 export interface BreadcrumbItem {
   id: string | null;
   name: string;
@@ -19,8 +19,8 @@ export default function Dashboard({ paths }: { paths: string }) {
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([{ id: null, name: "My Drive" }]);
   const [quota, setQuota] = useState<{ used: number; total: number } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-    const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-    const [detailItem, setDetailItem] = useState<FileItem | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState<FileItem | null>(null);
   const [trashItems, setTrashItems] = useState<FileItem[]>([]);
   const [temporary, setTemporary] = useState<FileItem[]>([]);
   const [searchResults, setSearchResults] = useState<FileItem[]>([]);
@@ -130,12 +130,12 @@ export default function Dashboard({ paths }: { paths: string }) {
     try {
       console.log("[onDelete] item object:", item);
       console.log("[onDelete] paths:", paths);
-      
+
       if (paths !== "trash") {
         const itemId = item.id || item._id;
         console.log("[onDelete] Moving to trash with id:", itemId);
         await apiClient.deleteItem(itemId);
-        
+
         toast({
           title: "Success",
           description: "Item moved to trash",
@@ -144,18 +144,18 @@ export default function Dashboard({ paths }: { paths: string }) {
       } else {
         const itemId = item._id || item.id;
         console.log("[onDelete] Permanently deleting with id:", itemId);
-        
+
         if (!itemId) {
           throw new Error("Item ID is missing (both _id and id are undefined)");
         }
         console.log("[onDelete] Confirmed itemId for permanent deletionjjjj:", itemId);
         await apiClient.permanentlyDeleteItem(itemId);
-        
+
         toast({
           title: "Success",
           description: "Item permanently deleted",
         });
-        
+
         trashLoadFiles();
         // refresh quota after permanent delete
         refreshQuota();
@@ -205,15 +205,15 @@ export default function Dashboard({ paths }: { paths: string }) {
       });
     }
   };
-  const onRestore = async(item:any)=>{
+  const onRestore = async (item: any) => {
     try {
-  
-      await apiClient.restoreItem(item.id || item._id); 
+
+      await apiClient.restoreItem(item.id || item._id);
       toast({
         title: "Success",
         description: "Item restored successfully",
       });
-       trashLoadFiles();
+      trashLoadFiles();
     } catch (error: any) {
       toast({
         title: "Restore Failed",
@@ -226,13 +226,13 @@ export default function Dashboard({ paths }: { paths: string }) {
 
   const handleSearch = async (keyword: string) => {
     setSearchQuery(keyword);
-    
+
     if (!keyword.trim()) {
       setSearchResults([]);
       setIsSearching(false);
       return;
     }
-    
+
     setIsSearching(true);
     try {
       const res = await apiClient.searchFilesByKeyword(keyword);
@@ -247,15 +247,14 @@ export default function Dashboard({ paths }: { paths: string }) {
     } finally {
       setIsSearching(false);
     }
-    if(keyword.startsWith("@"))
-    {
+    if (keyword.startsWith("@")) {
       const userview = keyword.slice(1);
       const res = await apiClient.searchFilesByUser(userview);
       setSearchResults(res || []);
     }
   };
 
-  
+
 
   const onOpenFolder = (folder: FileItem) => {
     const folderId = (folder as any).id || (folder as any)._id || null;
@@ -277,16 +276,16 @@ export default function Dashboard({ paths }: { paths: string }) {
     // Trim breadcrumbs to the clicked level
     setBreadcrumbs(breadcrumbs.slice(0, index + 1));
   };
-  const onDetail = async(item:any)=>{
+  const onDetail = async (item: any) => {
     setDetailItem(item);
     setDetailDialogOpen(true);
     console.log("Detail item:", item);
   }
-  const onShare = async(item:any)=>{
+  const onShare = async (item: any) => {
     setDetailItem(item);
     console.log("Detail item:", item);
   }
-  return (
+  return (<>
     <DriveLayout
       onCreateFolder={handleCreateFolder}
       onFileUpload={handleFileUpload}
@@ -298,22 +297,28 @@ export default function Dashboard({ paths }: { paths: string }) {
     >
       {(view) => (
         <FileGrid
-          files={searchQuery.trim() ? searchResults : (paths==="trash"?trashItems:files)}
+          files={searchQuery.trim() ? searchResults : (paths === "trash" ? trashItems : files)}
           view={view}
           onDelete={onDelete}
           onRename={onRename}
           isLoading={isUploading || isSearching}
-          path ={paths}
+          path={paths}
           onRestore={onRestore}
           isSearchActive={searchQuery.trim() ? true : false}
           isSearching={isSearching}
           searchResultCount={searchResults.length}
           onOpenFolder={onOpenFolder}
           onDetail={onDetail}
-        
+
         />
       )}
       
     </DriveLayout>
+    <DetailDialog
+        item={detailItem}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+      />
+      </>
   );
-    }
+}
